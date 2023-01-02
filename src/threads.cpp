@@ -112,7 +112,12 @@ void *reading_thread(void *arg) {
 						}
 
 				/* insert readings into channel queues */
-				if (n > 0)
+				if (n > 0) {
+					struct json_object *payload_obj = json_object_new_object();
+
+					// Take time from first reading:
+					json_object_object_add(payload_obj, "time", json_object_new_int64(rds[0].time_ms()));
+
 					for (MeterMap::iterator ch = mapping->begin(); ch != mapping->end(); ch++) {
 
 						// print(log_debug, "Check channel %s, n=%d", mtr->name(), ch->name(), n);
@@ -128,13 +133,16 @@ void *reading_thread(void *arg) {
 									  (*ch)->name(), rds[i].value(), rds[i].time_ms());
 								(*ch)->push(rds[i]);
 
+								// Add to json object
+								json_object_object_add(payload_obj, (*ch)->name(), json_object_new_double(rds[i].value()));
+
 								// provide data to push data server:
 								if (pushDataList) {
 									const std::string uuid = (*ch)->uuid();
 									pushDataList->add(uuid, rds[i].time_ms(), rds[i].value());
 									print(log_finest, "added to uuid %s", "push", uuid.c_str());
 								}
-#ifdef ENABLE_MQTT
+#ifdef ENABLE_MQTT_SINGLE
 								// update mqtt values as well:
 								if (mqttClient) {
 									mqttClient->publish((*ch), rds[i]);
@@ -144,6 +152,20 @@ void *reading_thread(void *arg) {
 						}
 
 					}                                                   // channel loop
+
+					std::string message = json_object_to_json_string(payload_obj);
+
+					print(log_finest, "json: \"%s\"", mtr->name(), message.c_str());
+
+#ifdef ENABLE_MQTT
+					// update mqtt values as well:
+					if (mqttClient) {
+						mqttClient->publish_str(message, mtr->name());
+					}
+#endif
+
+					json_object_put(payload_obj);
+				}
 			} while ((mtr->aggtime() > 0) && (time(NULL) < aggIntEnd)); /* default aggtime is -1 */
 
 			for (MeterMap::iterator ch = mapping->begin(); ch != mapping->end(); ch++) {
@@ -161,7 +183,7 @@ void *reading_thread(void *arg) {
 					add_ch_to_localbuffer(*(*ch)); // add this ch data to the local buffer
 				}
 #endif
-#ifdef ENABLE_MQTT
+#ifdef ENABLE_MQTT_SINGLE
 				// update mqtt values as well:
 				if (mqttClient) {
 					Buffer::Ptr buf = (*ch)->buffer();

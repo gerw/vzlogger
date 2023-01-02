@@ -25,6 +25,7 @@ class MqttClient {
 
 	void publish(Channel::Ptr ch, Reading &rds,
 				 bool aggregate = false); // thread safe, non blocking
+	void publish_str( std::string message, std::string topic );
   protected:
 	friend void *mqtt_client_thread(void *);
 	void connect_callback(struct mosquitto *mosq, int result);

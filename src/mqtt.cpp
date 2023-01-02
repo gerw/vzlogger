@@ -107,6 +107,8 @@ MqttClient::MqttClient(struct json_object *option) : _enabled(false) {
 			id.str(_id);
 		}
 
+		print(log_finest, "using id %s", "mqtt", id.str().c_str());
+
 		_mcs = mosquitto_new(id.str().c_str(), true, this);
 		if (!_mcs) {
 			print(log_alert, "mosquitto_new failed! Stopped!", "mqtt");
@@ -250,6 +252,23 @@ void MqttClient::ChannelEntry::generateNames(const std::string &prefix, Channel 
 	std::string uuid = ch.uuid();
 	if (uuid.length())
 		_announceValues.emplace_back("uuid", uuid);
+}
+
+void MqttClient::publish_str( std::string message, std::string topic_suffix ) {
+	std::string topic = _topic;
+	topic += topic_suffix;
+
+	if (!_mcs)
+		return;
+
+	print(log_finest, "publish %s=%s", "mqtt", topic.c_str(), message.c_str());
+
+	int res = mosquitto_publish(_mcs, 0, topic.c_str(), message.length(), message.c_str(), _qos,
+			_retain);
+
+	if (res != MOSQ_ERR_SUCCESS) {
+		print(log_finest, "mosquitto_publish failed: %s", "mqtt", mosquitto_strerror(res));
+	}
 }
 
 void MqttClient::publish(Channel::Ptr ch, Reading &rds, bool aggregate) {
