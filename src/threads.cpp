@@ -116,7 +116,7 @@ void *reading_thread(void *arg) {
 					struct json_object *payload_obj = json_object_new_object();
 
 					// Take time from first reading:
-					json_object_object_add(payload_obj, "time", json_object_new_int64(rds[0].time_ms()));
+					json_object_object_add(payload_obj, "time", json_object_new_double(rds[0].time_ms() / 1000.));
 
 					for (MeterMap::iterator ch = mapping->begin(); ch != mapping->end(); ch++) {
 
