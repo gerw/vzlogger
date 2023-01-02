@@ -81,7 +81,12 @@ Meter::Meter(std::list<Option> pOptions) : _name("meter") {
 
 	// set meter name
 	std::stringstream oss;
-	oss << "mtr" << id;
+	try {
+		oss << optlist.lookup_string(pOptions, "name");
+	} catch (vz::OptionNotFoundException &e) {
+		// set channel name
+		oss << "mtr" << id;
+	}
 	_name = oss.str();
 
 	// optlist.dump(pOptions);

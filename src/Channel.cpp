@@ -42,12 +42,16 @@ Channel::Channel(const std::list<Option> &pOptions, const std::string apiProtoco
 	  _last(0), _uuid(uuid), _apiProtocol(apiProtocol), _duplicates(0) {
 	id = instances++;
 
+	OptionList optlist;
+
 	// set channel name
 	std::stringstream oss;
-	oss << "chn" << id;
+	try {
+		oss << optlist.lookup_string(pOptions, "name");
+	} catch (vz::OptionNotFoundException &e) {
+		oss << "chn" << id;
+	}
 	_name = oss.str();
-
-	OptionList optlist;
 
 	try {
 		// aggmode
