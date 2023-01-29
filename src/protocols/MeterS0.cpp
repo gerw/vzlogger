@@ -348,7 +348,7 @@ ssize_t MeterS0::read(std::vector<Reading> &rds, size_t n) {
 	if (n < 4)
 		return 0; // would be worth a debug msg!
 
-	// wait till last+1s (even if we are already later)
+	// wait till last+0.1s (even if we are already later)
 	struct timespec req = _time_last_read;
 	// (or even more seconds if !send_zero
 
@@ -356,7 +356,7 @@ ssize_t MeterS0::read(std::vector<Reading> &rds, size_t n) {
 	unsigned int t_imp_neg;
 	bool is_zero = true;
 	do {
-		req.tv_sec += 1;
+		timespec_add_ms( req, 100 );
 		while (EINTR == clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &req, NULL))
 			;
 		// check from counter_thread the current impulses:
